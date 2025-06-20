@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ver Transmisión en Vivo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0d0d0d;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
+    header {
+      background: #1a1a1a;
+      padding: 1rem;
+      text-align: center;
+      width: 100%;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    #container {
+      position: relative;
+      width: 100vw;
+      height: calc(100vh - 160px);
+      overflow: hidden;
+    }
+    video#screenView {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    video#camView {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 300px;
+      height: 170px;
+      border: 2px solid white;
+      border-radius: 12px;
+      cursor: move;
+      z-index: 5;
+    }
+    .chat {
+      width: 100%;
+      max-width: 420px;
+      height: 400px;
+      margin-top: 1rem;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #999;
+      padding: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Transmisión en Vivo</h1>
+  </header>
+
+  <div id="container">
+    <video id="screenView" autoplay playsinline muted></video>
+    <video id="camView" autoplay playsinline muted></video>
+  </div>
+
+  <div class="chat">
+    <iframe src="https://www.tawk.to/chat/65f9ae468d261e1b5f6c7d92/1hp1jv2i2"></iframe>
+  </div>
+
+  <footer>
+    Ver transmisión en tiempo real — powered by HTML + JS + OBS opcional
+  </footer>
+
+  <script>
+    const screenView = document.getElementById("screenView");
+    const camView = document.getElementById("camView");
+
+    // Permite mover la cámara
+    camView.onmousedown = function(event) {
+      let shiftX = event.clientX - camView.getBoundingClientRect().left;
+      let shiftY = event.clientY - camView.getBoundingClientRect().top;
+
+      function moveAt(pageX, pageY) {
+        camView.style.left = pageX - shiftX + 'px';
+        camView.style.top = pageY - shiftY + 'px';
+      }
+
+      function onMouseMove(event) {
+        moveAt(event.pageX, event.pageY);
+      }
+
+      document.addEventListener('mousemove', onMouseMove);
+
+      camView.onmouseup = function() {
+        document.removeEventListener('mousemove', onMouseMove);
+        camView.onmouseup = null;
+      };
+    };
+
+    camView.ondragstart = function() {
+      return false;
+    };
+
+    // Recibir el stream desde la ventana transmisora
+    window.addEventListener("message", (event) => {
+      if (event.data.type === "stream-init") {
+        const screenTrack = event.data.screenTrack;
+        const camTrack = event.data.camTrack;
+
+        if (screenTrack) {
+          screenView.srcObject = new MediaStream([screenTrack]);
+        }
+        if (camTrack) {
+          camView.srcObject = new MediaStream([camTrack]);
+        }
+      }
+    });
+  </script>
+</body>
+</html>

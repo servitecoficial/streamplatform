@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Transmisión en Vivo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1 contenteditable="true" id="titulo">Título de la Transmisión</h1>
+  </header>
+
+  <main>
+    <section class="videos">
+      <div>
+        <h2>Cámara</h2>
+        <video id="video" autoplay playsinline controls muted></video>
+      </div>
+      <div>
+        <h2>Pantalla</h2>
+        <video id="screen" autoplay playsinline controls muted></video>
+      </div>
+    </section>
+
+    <button id="fullscreenBtn">Pantalla Completa</button>
+
+    <section id="chat">
+      <iframe src="https://www.tawk.to/chat/65f9ae468d261e1b5f6c7d92/1hp1jv2i2" frameborder="0" width="100%" height="400" allowfullscreen></iframe>
+    </section>
+  </main>
+
+  <footer>
+    <p>Transmisión vía OBS + Navegador + Chat en Vivo</p>
+  </footer>
+
+  <script>
+    const videoElement = document.getElementById("video");
+    const screenElement = document.getElementById("screen");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+
+    async function startStream() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        });
+        videoElement.srcObject = stream;
+        sendToViewer();
+      } catch (error) {
+        alert("Error al acceder a cámara o micrófono: " + error.message);
+        console.error("Error al obtener medios:", error);
+      }
+    }
+
+    async function startScreenShare() {
+      try {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            sampleRate: 44100
+          }
+        });
+        screenElement.srcObject = screenStream;
+        sendToViewer();
+      } catch (error) {
+        console.error("Error al compartir pantalla:", error);
+      }
+    }
+
+    function sendToViewer() {
+      const viewerWindow = window.viewerWindow;
+      if (viewerWindow && !viewerWindow.closed) {
+        const screenTrack = screenElement?.srcObject?.getVideoTracks()[0];
+        const camTrack = videoElement?.srcObject?.getVideoTracks()[0];
+        if (screenTrack && camTrack) {
+          viewerWindow.postMessage({
+            type: "stream-init",
+            screenTrack,
+            camTrack
+          }, "*");
+        }
+      }
+    }
+
+    fullscreenBtn.addEventListener("click", () => {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen();
+      } else if (document.documentElement.webkitRequestFullscreen) {
+        document.documentElement.webkitRequestFullscreen();
+      } else if (document.documentElement.msRequestFullscreen) {
+        document.documentElement.msRequestFullscreen();
+      }
+    });
+
+    window.viewerWindow = window.open("visor_interactivo_stream.html", "visorStream");
+
+    startStream();
+    startScreenShare();
+  </script>
+</body>
+</html>

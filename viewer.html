@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamPlatform - Ver Stream</title>
+    <style>
+        /* Tu CSS actual, movido aquí para mantener el estilo */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(20, 20, 35, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(139, 69, 255, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #8b45ff, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #8b45ff, #ff6b6b);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 69, 255, 0.4);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page {
+            display: block; /* Siempre visible en este archivo */
+        }
+
+        /* Viewer Page Styles */
+        .viewer-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+            height: calc(100vh - 140px);
+        }
+
+        .viewer-area {
+            background: rgba(20, 20, 35, 0.8);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(139, 69, 255, 0.2);
+        }
+
+        .stream-info {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(139, 69, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(139, 69, 255, 0.3);
+        }
+
+        .stream-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #8b45ff;
+        }
+
+        .stream-status {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        .status-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #00c851;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #00c851;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .viewer-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+            border-radius: 15px;
+        }
+
+        /* Chat and Comments */
+        .sidebar {
+            background: rgba(20, 20, 35, 0.9);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(139, 69, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            text-align: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: linear-gradient(45deg, #8b45ff, #ff6b6b);
+            border-radius: 15px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            margin-bottom: 1rem;
+            max-height: 400px;
+        }
+
+        .message {
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border-left: 3px solid #8b45ff;
+        }
+
+        .message-author {
+            font-weight: 600;
+            color: #8b45ff;
+            margin-bottom: 0.25rem;
+        }
+
+        .message-text {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.4;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+        }
+
+        .chat-input input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .send-btn {
+            padding: 0.75rem 1rem;
+            background: linear-gradient(45deg, #8b45ff, #ff6b6b);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .viewer-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+            }
+            
+            .sidebar {
+                max-height: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .navbar {
+                padding: 1rem;
+            }
+            
+            .nav-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🎮 StreamPlatform</div>
+        <div class="nav-buttons">
+            <button class="btn btn-primary" onclick="location.href='streamer.html'">Transmitir</button>
+            <button class="btn btn-secondary" onclick="location.href='viewer.html'">Ver Stream</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="viewer" class="page active">
+            <div class="viewer-layout fade-in">
+                <div class="viewer-area">
+                    <div class="stream-info">
+                        <div class="stream-title" id="viewerTitle">Stream no disponible</div>
+                        <div class="stream-status">
+                            <span class="status-live" id="liveStatus" style="display: none;">
+                                <span class="status-dot"></span>
+                                EN VIVO
+                            </span>
+                            <span id="offlineStatus">Stream no disponible</span>
+                        </div>
+                    </div>
+                    
+                    <div class="video-container">
+                        <video id="viewerVideo" class="viewer-video" autoplay controls></video>
+                    </div>
+                </div>
+                
+                <div class="sidebar">
+                    <div class="chat-header">💬 Chat del Stream</div>
+                    <div class="chat-messages" id="viewerChatMessages"></div>
+                    <div class="chat-input">
+                        <input type="text" id="viewerMessageInput" placeholder="Únete a la conversación..." onkeypress="handleViewerEnter(event)">
+                        <button class="send-btn" onclick="sendViewerMessage()">Enviar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let messages = [];
+        let viewerVideo = document.getElementById('viewerVideo');
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            syncViewerData();
+            displayMessages(); // Mostrar mensajes al cargar
+        });
+
+        // Sincronizar datos del streamer usando localStorage
+        function syncViewerData() {
+            const storedData = localStorage.getItem('streamPlatformData');
+            if (storedData) {
+                const streamData = JSON.parse(storedData);
+                
+                const viewerTitle = document.getElementById('viewerTitle');
+                const liveStatus = document.getElementById('liveStatus');
+                const offlineStatus = document.getElementById('offlineStatus');
+                
+                // Actualizar título
+                viewerTitle.textContent = streamData.streamTitle || 'Stream no disponible';
+                
+                // Actualizar estado (EN VIVO/Offline)
+                if (streamData.isStreaming) {
+                    liveStatus.style.display = 'flex';
+                    offlineStatus.style.display = 'none';
+                    // Nota: Aquí es donde en una implementación real recibirías el stream via WebRTC o similar.
+                    // Para esta simulación, no podemos simplemente asignar el srcObject de una pestaña a otra.
+                    // Se muestra un "placeholder" o se asume que un stream real se conectaría aquí.
+                    // Si el usuario está en el mismo navegador y abriendo la pestaña de viewer,
+                    // el navegador no puede pasar directamente el MediaStream de una pestaña a otra con localStorage.
+                    // Para probar la simulación del stream, necesitarías ejecutar ambos archivos y
+                    // el "viewerVideo" se cargaría si es un stream externo o simulado.
+                    // Para demostración interna, el video no se mostrará directamente entre pestañas con esta técnica.
+                } else {
+                    liveStatus.style.display = 'none';
+                    offlineStatus.style.display = 'block';
+                    viewerVideo.srcObject = null;
+                }
+                
+                // Sincronizar chat
+                messages = streamData.messages || [];
+                displayMessages();
+            } else {
+                // Si no hay datos de stream, asegurar que se muestre como offline
+                document.getElementById('viewerTitle').textContent = 'Stream no disponible';
+                document.getElementById('liveStatus').style.display = 'none';
+                document.getElementById('offlineStatus').style.display = 'block';
+                viewerVideo.srcObject = null;
+                messages = [];
+                displayMessages();
+            }
+        }
+
+        // Escuchar cambios en localStorage para actualizar el chat y el estado
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'streamPlatformData') {
+                syncViewerData(); // Recargar todos los datos cuando el localStorage cambia
+            }
+        });
+
+        // Sistema de chat para el viewer
+        function sendViewerMessage() {
+            const input = document.getElementById('viewerMessageInput');
+            const messageText = input.value.trim();
+            
+            if (messageText) {
+                // Leer el estado actual para no sobrescribir
+                let storedData = localStorage.getItem('streamPlatformData');
+                let streamData = storedData ? JSON.parse(storedData) : { messages: [] };
+                
+                const message = {
+                    author: 'Viewer',
+                    text: messageText,
+                    timestamp: new Date().toISOString()
+                };
+                streamData.messages.push(message);
+                localStorage.setItem('streamPlatformData', JSON.stringify(streamData)); // Guardar de nuevo
+                
+                input.value = '';
+                // La función syncViewerData() se encargará de actualizar el chat al detectar el cambio en localStorage
+            }
+        }
+
+        function displayMessages() {
+            const viewerChatMessagesDiv = document.getElementById('viewerChatMessages');
+            viewerChatMessagesDiv.innerHTML = messages.map(msg => `
+                <div class="message slide-up">
+                    <div class="message-author">${msg.author}</div>
+                    <div class="message-text">${msg.text}</div>
+                </div>
+            `).join('');
+            viewerChatMessagesDiv.scrollTop = viewerChatMessagesDiv.scrollHeight;
+        }
+
+        function handleViewerEnter(event) {
+            if (event.key === 'Enter') {
+                sendViewerMessage();
+            }
+        }
+    </script>
+</body>
+</html>

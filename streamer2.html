@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamPlatform - Streamer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(20, 20, 35, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(139, 69, 255, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #8b45ff, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #8b45ff, #ff6b6b);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 69, 255, 0.4);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .streamer-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+            height: calc(100vh - 140px);
+        }
+
+        .stream-area {
+            background: rgba(20, 20, 35, 0.8);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(139, 69, 255, 0.2);
+        }
+
+        .stream-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(139, 69, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(139, 69, 255, 0.3);
+        }
+
+        .title-input {
+            flex: 1;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            margin-right: 1rem;
+        }
+
+        .title-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .stream-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .stream-btn {
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .stream-btn.start {
+            background: linear-gradient(45deg, #00c851, #00ff7f);
+            color: white;
+        }
+
+        .stream-btn.stop {
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            color: white;
+        }
+
+        .stream-btn.disabled {
+            background: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+        }
+
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            margin-bottom: 1rem;
+        }
+
+        .video-stream {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 200px;
+            height: 150px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #8b45ff;
+            cursor: move;
+            z-index: 10;
+        }
+
+        .camera-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .media-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+        }
+
+        .control-btn {
+            padding: 0.75rem;
+            border: none;
+            border-radius: 50%;
+            background: rgba(139, 69, 255, 0.8);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: #8b45ff;
+            transform: scale(1.1);
+        }
+
+        .control-btn.active {
+            background: #00c851;
+        }
+
+        .sidebar {
+            background: rgba(20, 20, 35, 0.9);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(139, 69, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            text-align: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: linear-gradient(45deg, #8b45ff, #ff6b6b);
+            border-radius: 15px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            margin-bottom: 1rem;
+            max-height: 400px;
+        }
+
+        .message {
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border-left: 3px solid #8b45ff;
+        }
+
+        .message-author {
+            font-weight: 600;
+            color: #8b45ff;
+            margin-bottom: 0.25rem;
+        }
+
+        .message-text {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.4;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+        }
+
+        .chat-input input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .send-btn {
+            padding: 0.75rem 1rem;
+            background: linear-gradient(45deg, #8b45ff, #ff6b6b);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .stream-stats {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .stat-value {
+            color: #8b45ff;
+            font-weight: 600;
+        }
+
+        @media (max-width: 1024px) {
+            .streamer-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+            }
+            
+            .sidebar {
+                max-height: 300px;
+            }
+            
+            .camera-overlay {
+                width: 150px;
+                height: 100px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .navbar {
+                padding: 1rem;
+            }
+            
+            .nav-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🎮 StreamPlatform</div>
+        <div class="nav-buttons">
+            <a href="viewer.html" class="btn btn-secondary">Ver Stream</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="streamer-layout fade-in">
+            <div class="stream-area">
+                <div class="stream-controls">
+                    <input type="text" class="title-input" id="streamTitle" placeholder="Título de tu stream..." value="Mi stream en vivo">
+                    <div class="stream-buttons">
+                        <button class="stream-btn start" id="startStreamBtn" onclick="startStream()">▶ Iniciar</button>
+                        <button class="stream-btn stop disabled" id="stopStreamBtn" onclick="stopStream()">⏹ Detener</button>
+                    </div>
+                </div>
+                
+                <div class="video-container">
+                    <video id="screenStream" class="video-stream" autoplay muted></video>
+                    <div class="camera-overlay" id="cameraOverlay">
+                        <video id="cameraStream" class="camera-video" autoplay muted></video>
+                    </div>
+                </div>
+                
+                <div class="media-controls">
+                    <button class="control-btn" id="micBtn" onclick="toggleMic()" title="Micrófono">🎤</button>
+                    <button class="control-btn" id="cameraBtn" onclick="toggleCamera()" title="Cámara">📹</button>
+                    <button class="control-btn" id="screenBtn" onclick="toggleScreen()" title="Pantalla">🖥️</button>
+                    <button class="control-btn" id="settingsBtn" onclick="openSettings()" title="Configuración">⚙️</button>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="chat-header">💬 Chat en Vivo</div>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="Escribe un mensaje..." onkeypress="handleEnter(event)">
+                    <button class="send-btn" onclick="sendMessage()">Enviar</button>
+                </div>
+                
+                <div class="stream-stats">
+                    <div class="stat-item">
+                        <span>Estado:</span>
+                        <span class="stat-value" id="streamStatus">Desconectado</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Tiempo:</span>
+                        <span class="stat-value" id="streamTime">00:00:00</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Viewers:</span>
+                        <span class="stat-value" id="viewerCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isStreaming = false;
+        let screenStream = null;
+        let cameraStream = null;
+        let combinedStream = null;
+        let mediaRecorder = null;
+        let micEnabled = true;
+        let cameraEnabled = true;
+        let screenEnabled = false;
+        let messages = [];
+        let streamTitle = "Mi stream en vivo";
+        let streamStartTime = null;
+        let streamTimer = null;
+
+        const screenVideo = document.getElementById('screenStream');
+        const cameraVideo = document.getElementById('cameraStream');
+        const cameraOverlay = document.getElementById('cameraOverlay');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCamera();
+            makeCameraDraggable();
+            updateUI();
+            loadChatFromStorage();
+            addMessage('Sistema', '¡Bienvenido a StreamPlatform! 🎮', 'system');
+        });
+
+        async function initializeCamera() {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        frameRate: { ideal: 30 }
+                    }, 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                cameraVideo.srcObject = cameraStream;
+                cameraVideo.play();
+            } catch (error) {
+                console.error('Error al acceder a la cámara:', error);
+                showNotification('Error al acceder a la cámara', 'error');
+            }
+        }
+
+        async function startStream() {
+            if (isStreaming) return;
+            
+            try {
+                screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { 
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        frameRate: { ideal: 30 }
+                    },
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                });
+                
+                screenVideo.srcObject = screenStream;
+                screenVideo.play();
+                
+                combinedStream = new MediaStream();
+                
+                if (screenStream.getVideoTracks().length > 0) {
+                    combinedStream.addTrack(screenStream.getVideoTracks()[0]);
+                }
+                
+                if (screenStream.getAudioTracks().length > 0) {
+                    combinedStream.addTrack(screenStream.getAudioTracks()[0]);
+                }
+                
+                if (cameraStream && cameraStream.getAudioTracks().length > 0) {
+                    combinedStream.addTrack(cameraStream.getAudioTracks()[0]);
+                }
+                
+                isStreaming = true;
+                screenEnabled = true;
+                streamTitle = document.getElementById('streamTitle').value || 'Mi stream en vivo';
+                streamStartTime = new Date();
+                
+                updateStreamButtons();
+                updateControlButtons();
+                updateStreamStatus();
+                startStreamTimer();
+                saveStreamData();
+                
+                showNotification('¡Stream iniciado con éxito!', 'success');
+                addMessage('Sistema', 'Stream iniciado - ¡Ya estás en vivo!', 'system');
+                
+                screenStream.getVideoTracks()[0].addEventListener('ended', () => {
+                    stopStream();
+                });
+                
+            } catch (error) {
+                console.error('Error al iniciar stream:', error);
+                showNotification('Error al iniciar el stream. Verifica los permisos.', 'error');
+            }
+        }
+
+        function stopStream() {
+            if (!isStreaming) return;
+            
+            if (screenStream) {
+                screenStream.getTracks().forEach(track => track.stop());
+                screenStream = null;
+            }
+            
+            if (combinedStream) {
+                combinedStream.getTracks().forEach(track => track.stop());
+                combinedStream = null;
+            }
+            
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            
+            screenVideo.srcObject = null;
+            isStreaming = false;
+            screenEnabled = false;
+            streamStartTime = null;
+            
+            if (streamTimer) {
+                clearInterval(streamTimer);
+                streamTimer = null;
+            }
+            
+            updateStreamButtons();
+            updateControlButtons();
+            updateStreamStatus();
+            saveStreamData();
+            
+            showNotification('Stream detenido', 'info');
+            addMessage('Sistema', 'Stream finalizado', 'system');
+        }
+
+        function toggleMic() {
+            micEnabled = !micEnabled;
+            
+            if (cameraStream) {
+                cameraStream.getAudioTracks().forEach(track => {
+                    track.enabled = micEnabled;
+                });
+            }
+            
+            if (screenStream) {
+                screenStream.getAudioTracks().forEach(track => {
+                    track.enabled = micEnabled;
+                });
+            }
+            
+            updateControlButtons();
+            showNotification(micEnabled ? 'Micrófono activado' : 'Micrófono desactivado', 'info');
+        }
+
+        function toggleCamera() {
+            cameraEnabled = !cameraEnabled;
+            cameraOverlay.style.display = cameraEnabled ? 'block' : 'none';
+            
+            if (cameraStream) {
+                cameraStream.getVideoTracks().forEach(track => {
+                    track.enabled = cameraEnabled;
+                });
+            }
+            
+            updateControlButtons();
+            showNotification(cameraEnabled ? 'Cámara activada' : 'Cámara desactivada', 'info');
+        }
+
+        function toggleScreen() {
+            if (screenEnabled && isStreaming) {
+                stopStream();
+            } else if (!isStreaming) {
+                startStream();
+            }
+        }
+
+        function updateStreamButtons() {
+            const startBtn = document.getElementById('startStreamBtn');
+            const stopBtn = document.getElementById('stopStreamBtn');
+            
+            if (isStreaming) {
+                startBtn.classList.add('disabled');
+                startBtn.disabled = true;
+                stopBtn.classList.remove('disabled');
+                stopBtn.disabled = false;
+            } else {
+                startBtn.classList.remove('disabled');
+                startBtn.disabled = false;
+                stopBtn.classList.add('disabled');
+                stopBtn.disabled = true;
+            }
+        }
+
+        function updateControlButtons() {
+            const micBtn = document.getElementById('micBtn');
+            const cameraBtn = document.getElementById('cameraBtn');
+            const screenBtn = document.getElementById('screenBtn');
+            
+            micBtn.classList.toggle('active', micEnabled);
+            cameraBtn.classList.toggle('active', cameraEnabled);
+            screenBtn.classList.toggle('active', screenEnabled);
+        }
+
+        function updateStreamStatus() {
+            const statusElement = document.getElementById('streamStatus');
+            statusElement.textContent = isStreaming ? 'En Vivo' : 'Desconectado';
+            statusElement.style.color = isStreaming ? '#00c851' : '#ff4444';
+        }
+
+        function startStreamTimer() {
+            streamTimer = setInterval(() => {
+                if (streamStartTime) {
+                    const elapsed = Math.floor((new Date() - streamStartTime) / 1000);
+                    const hours = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+                    const minutes = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+                    const seconds = (elapsed % 60).toString().padStart(2, '0');
+                    
+                    document.getElementById('streamTime').textContent = `${hours}:${minutes}:${seconds}`;
+                }
+            }, 1000);
+        }
+
+        function makeCameraDraggable() {
+            let isDragging = false;
+            let startX, startY, startLeft, startTop;
+            
+            cameraOverlay.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                const rect = cameraOverlay.getBoundingClientRect();
+                startLeft = rect.left;
+                startTop = rect.top;
+                
+                cameraOverlay.style.cursor = 'grabbing';
+                cameraOverlay.style.position = 'fixed';
+                cameraOverlay.style.left = startLeft + 'px';
+                cameraOverlay.style.top = startTop + 'px';
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging) return;
+                
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                cameraOverlay.style.left = (startLeft + dx) + 'px';
+                cameraOverlay.style.top = (startTop + dy) + 'px';
+            });
+            
+            document.addEventListener('mouseup', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    cameraOverlay.style.cursor = 'move';
+                    cameraOverlay.style.position = 'absolute';
+                    cameraOverlay.style.left = '20px';
+                    cameraOverlay.style.top = 'auto';
+                    cameraOverlay.style.bottom = '20px';
+                    cameraOverlay.style.right = '20px';
+                }
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                addMessage('Streamer', message, 'streamer');
+                input.value = '';
+            }
+        }
+
+        function addMessage(author, text, type) {
+            const message = {
+                id: Date.now(),
+                author: author,
+                text: text,
+                type: type,
+                timestamp: new Date().toISOString()
+            };
+            
+            messages.push(message);
+            if (messages.length > 100) {
+                messages.shift();
+            }
+            
+            displayMessages();
+            saveChatToStorage();
+        }
+
+        function displayMessages() {
+            const chatMessages = document.getElementById('chatMessages');
+            
+            const messagesHTML = messages.map(msg => `
+                <div class="message slide-up">
+                    <div class="message-author">${msg.author}</div>
+                    <div class="message-text">${msg.text}</div>
+                </div>
+            `).join('');
+            
+            chatMessages.innerHTML = messagesHTML;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function handleEnter(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function saveChatToStorage() {
+            try {
+                const chatData = {
+                    messages: messages,
+                    lastUpdate: new Date().toISOString()
+                };
+                localStorage.setItem('streamPlatformChat', JSON.stringify(chatData));
+            } catch (error) {
+                console.warn('No se pudo guardar el chat:', error);
+            }
+        }
+
+        function loadChatFromStorage() {
+            try {
+                const chatData = localStorage.getItem('streamPlatformChat');
+                if (chatData) {
+                    const parsed = JSON.parse(chatData);
+                    messages = parsed.messages || [];
+                    displayMessages();
+                }
+            } catch (error) {
+                console.warn('No se pudo cargar el chat:', error);
+            }
+        }
+
+        function saveStreamData() {
+            try {
+                const streamData = {
+                    isStreaming: isStreaming,
+                    streamTitle: streamTitle,
+                    micEnabled: micEnabled,
+                    cameraEnabled: cameraEnabled,
+                    screenEnabled: screenEnabled,
+                    lastUpdate: new Date().toISOString()
+                };
+                localStorage.setItem('streamPlatformData', JSON.stringify(streamData));
+            } catch (error) {
+                console.warn('No se pudo guardar los datos del stream:', error);
+            }
+        }
+
+        function updateUI() {
+            updateStreamButtons();
+            updateControlButtons();
+            updateStreamStatus();
+        }
+
+        function openSettings() {
+            showNotification('Panel de configuración (próximamente)', 'info');
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                border-radius: 10px;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                animation: slideIn 0.3s ease-out;
+                max-width: 300px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            `;
+            
+            switch(type) {
+                case 'success':
+                    notification.style.background = 'linear-gradient(45deg, #00c851, #00ff7f)';
+                    break;
+                case 'error':
+                    notification.style.background = 'linear-gradient(45deg, #ff4444, #cc0000)';
+                    break;
+                case 'info':
+                    notification.style.background = 'linear-gradient(45deg, #8b45ff, #ff6b6b)';
+                    break;
+                default:
+                    notification.style.background = 'linear-gradient(45deg, #333, #666)';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        document.getElementById('streamTitle').addEventListener('input', function(e) {
+            streamTitle = e.target.value || 'Mi stream en vivo';
+            saveStreamData();
+        });
+
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && isStreaming) {
+                showNotification('Stream continuando en segundo plano', 'info');
+            }
+        });
+
+        window.addEventListener('beforeunload', function(e) {
+            if (isStreaming) {
+                e.preventDefault();
+                e.returnValue = '¿Estás seguro de que quieres salir? Tu stream se detendrá.';
+                return e.returnValue;
+            }
+        });
+
+        // Actualizar contador de viewers simulado
+        setInterval(() => {
+            if (isStreaming) {
+                const viewers = Math.floor(Math.random() * 50) + 1;
+                document.getElementById('viewerCount').textContent = viewers;
+            } else {
+                document.getElementById('viewerCount').textContent = '0';
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

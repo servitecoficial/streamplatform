@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamPlatform - Streamer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(20, 20, 35, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(139, 69, 255, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #8b45ff, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #8b45ff, #ff6b6b);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 69, 255, 0.4);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .streamer-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+            height: calc(100vh - 140px);
+        }
+
+        .stream-area {
+            background: rgba(20, 20, 35, 0.8);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(139, 69, 255, 0.2);
+        }
+
+        .stream-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(139, 69, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(139, 69, 255, 0.3);
+        }
+
+        .title-input {
+            flex: 1;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            margin-right: 1rem;
+        }
+
+        .title-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .stream-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .stream-btn {
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .stream-btn.start {
+            background: linear-gradient(45deg, #00c851, #00ff7f);
+            color: white;
+        }
+
+        .stream-btn.stop {
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            color: white;
+        }
+
+        .stream-btn.disabled {
+            background: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+        }
+
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            margin-bottom: 1rem;
+        }
+
+        .video-stream {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 200px;
+            height: 150px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #8b45ff;
+            cursor: move;
+            z-index: 10;
+        }
+
+        .camera-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .media-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+        }
+
+        .control-btn {
+            padding: 0.75rem;
+            border: none;
+            border-radius: 50%;
+            background: rgba(139, 69, 255, 0.8);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: #8b45ff;
+            transform: scale(1.1);
+        }
+
+        .control-btn.active {
+            background: #00c851;
+        }
+
+        .sidebar {
+            background: rgba(20, 20, 35, 0.9);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(139, 69, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            text-align: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: linear-gradient(45deg, #8b45ff, #ff6b6b);
+            border-radius: 15px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            margin-bottom: 1rem;
+            max-height: 400px;
+        }
+
+        .message {
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border-left: 3px solid #8b45ff;
+        }
+
+        .message-author {
+            font-weight: 600;
+            color: #8b45ff;
+            margin-bottom: 0.25rem;
+        }
+
+        .message-text {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.4;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+        }
+
+        .chat-input input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .send-btn {
+            padding: 0.75rem 1rem;
+            background: linear-gradient(45deg, #8b45ff, #ff6b6b);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .stream-stats {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .stat-value {
+            color: #8b45ff;
+            font-weight: 600;
+        }
+
+        /* Sección de Conexión (Nueva) */
+        .connection-setup {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .setup-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            text-align: center;
+            color: #fff;
+        }
+
+        .setup-step {
+            margin-bottom: 1.5rem;
+        }
+
+        .step-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #a8d8ff;
+        }
+
+        .connection-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 0.9rem;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        .connection-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .connection-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: linear-gradient(45deg, #00c851, #00ff7f);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 200, 81, 0.3);
+            margin-top: 1rem;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 200, 81, 0.4);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .copy-btn {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .copy-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .connection-status-text {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-indicator.red { background-color: #ff4444; }
+        .status-indicator.green { background-color: #00c851; }
+        .status-indicator.yellow { background-color: #f39c12; }
+
+        @media (max-width: 1024px) {
+            .streamer-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto; /* Adjusted to fit connection setup */
+                height: auto;
+            }
+            
+            .sidebar {
+                max-height: 300px;
+            }
+            
+            .camera-overlay {
+                width: 150px;
+                height: 100px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .navbar {
+                padding: 1rem;
+            }
+            
+            .nav-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🎮 StreamPlatform</div>
+        <div class="nav-buttons">
+            <a href="viewer.html" class="btn btn-secondary">Ver Stream</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="connection-setup fade-in" id="connectionSetup">
+            <div class="setup-title">🔗 Compartir Stream con Viewers</div>
+            
+            <div class="setup-step">
+                <div class="step-title">Paso 1: Generar código de conexión</div>
+                <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem; font-size: 0.9rem;">
+                    Haz clic en "Generar Código" para crear el enlace de tu stream.
+                </p>
+                <textarea 
+                    id="offerData" 
+                    class="connection-input" 
+                    placeholder="Tu código de conexión aparecerá aquí..."
+                    readonly
+                ></textarea>
+                <button class="generate-btn" id="generateOfferBtn" onclick="generateConnectionCode()">
+                    ✨ Generar Código de Conexión
+                </button>
+                <button class="copy-btn" id="copyOfferBtn" onclick="copyOffer()" disabled>📋 Copiar Código</button>
+            </div>
+
+            <div class="setup-step" id="answerStep" style="display: none;">
+                <div class="step-title">Paso 2: Pega el código de respuesta del viewer</div>
+                <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem; font-size: 0.9rem;">
+                    Pide al viewer que te envíe su "Código de Respuesta" y pégalo aquí.
+                </p>
+                <textarea id="answerData" class="connection-input" placeholder="Pega aquí el código de respuesta del viewer..."></textarea>
+                <button class="generate-btn" id="connectViewerBtn" onclick="processAnswer()" disabled>
+                    🔌 Conectar Viewer
+                </button>
+            </div>
+            <div class="connection-status-text" id="streamerConnectionStatus">
+                <span class="status-indicator yellow"></span> Esperando a generar oferta...
+            </div>
+        </div>
+
+        <div class="streamer-layout fade-in hidden" id="streamerInterface">
+            <div class="stream-area">
+                <div class="stream-controls">
+                    <input type="text" class="title-input" id="streamTitle" placeholder="Título de tu stream..." value="Mi stream en vivo">
+                    <div class="stream-buttons">
+                        <button class="stream-btn start" id="startStreamBtn" onclick="startStream()">▶ Iniciar</button>
+                        <button class="stream-btn stop disabled" id="stopStreamBtn" onclick="stopStream()">⏹ Detener</button>
+                    </div>
+                </div>
+                
+                <div class="video-container">
+                    <video id="screenStream" class="video-stream" autoplay muted></video>
+                    <div class="camera-overlay" id="cameraOverlay">
+                        <video id="cameraStream" class="camera-video" autoplay muted></video>
+                    </div>
+                </div>
+                
+                <div class="media-controls">
+                    <button class="control-btn" id="micBtn" onclick="toggleMic()" title="Micrófono">🎤</button>
+                    <button class="control-btn" id="cameraBtn" onclick="toggleCamera()" title="Cámara">📹</button>
+                    <button class="control-btn" id="screenBtn" onclick="toggleScreen()" title="Pantalla">🖥️</button>
+                    <button class="control-btn" id="settingsBtn" onclick="openSettings()" title="Configuración">⚙️</button>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="chat-header">💬 Chat en Vivo</div>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="Escribe un mensaje..." onkeypress="handleEnter(event)" disabled>
+                    <button class="send-btn" onclick="sendMessage()" disabled id="sendButton">Enviar</button>
+                </div>
+                
+                <div class="stream-stats">
+                    <div class="stat-item">
+                        <span>Estado:</span>
+                        <span class="stat-value" id="streamStatus">Desconectado</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Tiempo:</span>
+                        <span class="stat-value" id="streamTime">00:00:00</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Viewers Conectados:</span>
+                        <span class="stat-value" id="viewerCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pc = null; // PeerConnection
+        let dataChannel = null;
+        let isStreaming = false;
+        let screenStream = null;
+        let cameraStream = null;
+        let combinedStream = null; // Stream que se enviará al viewer
+        let micEnabled = true;
+        let cameraEnabled = true;
+        let screenEnabled = false; // Indica si la pantalla está siendo compartida
+        let messages = [];
+        let streamTitle = "Mi stream en vivo";
+        let streamStartTime = null;
+        let streamTimer = null;
+        let viewerConnected = false;
+
+        const screenVideo = document.getElementById('screenStream');
+        const cameraVideo = document.getElementById('cameraStream');
+        const cameraOverlay = document.getElementById('cameraOverlay');
+        const offerDataInput = document.getElementById('offerData');
+        const answerDataInput = document.getElementById('answerData');
+        const generateOfferBtn = document.getElementById('generateOfferBtn');
+        const copyOfferBtn = document.getElementById('copyOfferBtn');
+        const connectViewerBtn = document.getElementById('connectViewerBtn');
+        const connectionSetup = document.getElementById('connectionSetup');
+        const streamerInterface = document.getElementById('streamerInterface');
+        const answerStep = document.getElementById('answerStep');
+        const streamerConnectionStatus = document.getElementById('streamerConnectionStatus');
+        const chatMessagesDiv = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const viewerCountSpan = document.getElementById('viewerCount');
+
+        // Configuración WebRTC
+        const configuration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' }
+            ],
+            iceCandidatePoolSize: 10
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCamera();
+            makeCameraDraggable();
+            updateUI();
+            loadChatFromStorage();
+            addMessage('Sistema', '¡Bienvenido a StreamPlatform! 🎮', 'system');
+            updateStreamerConnectionStatus('Preparando conexión...', 'yellow');
+            
+            // Habilitar botón de conectar viewer si hay algo en answerData
+            answerDataInput.addEventListener('input', () => {
+                connectViewerBtn.disabled = answerDataInput.value.trim() === '';
+            });
+        });
+
+        // --- Funciones de Utilidad ---
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                border-radius: 10px;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                animation: slideIn 0.3s ease-out;
+                max-width: 300px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            `;
+            
+            switch(type) {
+                case 'success':
+                    notification.style.background = 'linear-gradient(45deg, #00c851, #00ff7f)';
+                    break;
+                case 'error':
+                    notification.style.background = 'linear-gradient(45deg, #ff4444, #cc0000)';
+                    break;
+                case 'info':
+                    notification.style.background = 'linear-gradient(45deg, #8b45ff, #ff6b6b)';
+                    break;
+                default:
+                    notification.style.background = 'linear-gradient(45deg, #333, #666)';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        function addMessage(author, text, type) {
+            const authorColor = type === 'viewer' ? '#667eea' : type === 'system' ? '#f39c12' : '#8b45ff';
+            
+            const messageHTML = `
+                <div class="message slide-up">
+                    <div class="message-author" style="color: ${authorColor};">${author}</div>
+                    <div class="message-text">${text}</div>
+                </div>
+            `;
+            
+            chatMessagesDiv.insertAdjacentHTML('beforeend', messageHTML);
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+            
+            messages.push({ author, text, type, timestamp: new Date().toISOString() });
+            if (messages.length > 100) { // Mantener un límite de mensajes para evitar sobrecarga
+                messages.shift();
+            }
+            saveChatToStorage();
+        }
+
+        function handleEnter(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function copyOffer() {
+            offerDataInput.select();
+            document.execCommand('copy');
+            const originalText = copyOfferBtn.textContent;
+            copyOfferBtn.textContent = '✅ ¡Copiado!';
+            setTimeout(() => {
+                copyOfferBtn.textContent = originalText;
+            }, 2000);
+            showNotification('Código de conexión copiado.', 'success');
+        }
+
+        function updateStreamerConnectionStatus(text, colorClass) {
+            streamerConnectionStatus.innerHTML = `<span class="status-indicator ${colorClass}"></span> ${text}`;
+        }
+
+        // --- Manejo de Streams y WebRTC ---
+        async function initializeCamera() {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        frameRate: { ideal: 30 }
+                    }, 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                cameraVideo.srcObject = cameraStream;
+                cameraVideo.play();
+                updateControlButtons();
+                showNotification('Cámara inicializada.', 'info');
+            } catch (error) {
+                console.error('Error al acceder a la cámara:', error);
+                showNotification('Error al acceder a la cámara. Revisa permisos.', 'error');
+                cameraEnabled = false; // Deshabilitar si no se pudo acceder
+                updateControlButtons();
+            }
+        }
+
+        async function startStream() {
+            if (isStreaming) return;
+            
+            try {
+                screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { 
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        frameRate: { ideal: 30 }
+                    },
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                });
+                
+                screenVideo.srcObject = screenStream;
+                screenVideo.play();
+                
+                // Crear el stream combinado para enviar
+                combinedStream = new MediaStream();
+                
+                // Añadir la pista de video de la pantalla
+                if (screenStream.getVideoTracks().length > 0) {
+                    combinedStream.addTrack(screenStream.getVideoTracks()[0]);
+                }
+                
+                // Añadir la pista de audio de la pantalla (si existe)
+                if (screenStream.getAudioTracks().length > 0) {
+                    combinedStream.addTrack(screenStream.getAudioTracks()[0]);
+                }
+                
+                // Añadir la pista de audio de la cámara (si existe y está activada)
+                if (cameraStream && cameraStream.getAudioTracks().length > 0 && micEnabled) {
+                    combinedStream.addTrack(cameraStream.getAudioTracks()[0]);
+                }
+
+                isStreaming = true;
+                screenEnabled = true;
+                streamTitle = document.getElementById('streamTitle').value || 'Mi stream en vivo';
+                streamStartTime = new Date();
+                
+                updateStreamButtons();
+                updateControlButtons();
+                updateStreamStatus();
+                startStreamTimer();
+                saveStreamData();
+                
+                showNotification('¡Stream de pantalla iniciado!', 'success');
+                addMessage('Sistema', 'Stream iniciado - ¡Compartiendo tu pantalla!', 'system');
+                
+                // Detectar si el usuario deja de compartir pantalla
+                screenStream.getVideoTracks()[0].addEventListener('ended', () => {
+                    showNotification('Compartir pantalla terminado.', 'info');
+                    stopStream(); // Detener todo el stream si la pantalla deja de compartirse
+                });
+
+                // Si ya tenemos una conexión P2P activa, añadir los tracks.
+                // Esto es relevante si el streamer inicia el stream DESPUÉS de que el viewer ya está "conectado" al PC.
+                if (pc && pc.connectionState !== 'closed') {
+                    combinedStream.getTracks().forEach(track => {
+                        pc.addTrack(track, combinedStream);
+                    });
+                    showNotification('Pistas de stream añadidas a la conexión WebRTC.', 'info');
+                }
+                
+            } catch (error) {
+                console.error('Error al iniciar stream:', error);
+                showNotification('Error al iniciar el stream. Asegúrate de permitir compartir pantalla.', 'error');
+            }
+        }
+
+        function stopStream() {
+            if (!isStreaming) return;
+            
+            // Detener todos los tracks de los streams locales
+            if (screenStream) {
+                screenStream.getTracks().forEach(track => track.stop());
+                screenStream = null;
+            }
+            
+            // Nota: cameraStream.getTracks().forEach(track => track.stop()); no debe hacerse aquí,
+            // ya que la cámara puede seguir usándose para el overlay o para futuras transmisiones.
+            // Solo se gestiona con toggleCamera().
+
+            // Detener y limpiar la conexión WebRTC
+            if (pc) {
+                pc.getTransceivers().forEach(transceiver => {
+                    if (transceiver.sender && transceiver.sender.track) {
+                        transceiver.sender.track.stop();
+                    }
+                });
+                pc.close();
+                pc = null;
+            }
+
+            // Desactivar el canal de datos
+            if (dataChannel) {
+                dataChannel.close();
+                dataChannel = null;
+            }
+            
+            screenVideo.srcObject = null;
+            isStreaming = false;
+            screenEnabled = false;
+            streamStartTime = null;
+            viewerConnected = false;
+            
+            if (streamTimer) {
+                clearInterval(streamTimer);
+                streamTimer = null;
+                document.getElementById('streamTime').textContent = '00:00:00';
+            }
+            
+            updateStreamButtons();
+            updateControlButtons();
+            updateStreamStatus();
+            saveStreamData();
+            
+            offerDataInput.value = ''; // Limpiar códigos
+            answerDataInput.value = '';
+            generateOfferBtn.disabled = false;
+            copyOfferBtn.disabled = true;
+            connectViewerBtn.disabled = true;
+            answerStep.style.display = 'none';
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            viewerCountSpan.textContent = '0';
+            
+            // Volver a la interfaz de conexión
+            connectionSetup.classList.remove('hidden');
+            streamerInterface.classList.add('hidden');
+            updateStreamerConnectionStatus('Stream detenido. Genera una nueva oferta para empezar.', 'red');
+
+            showNotification('Stream detenido. Conexión cerrada.', 'info');
+            addMessage('Sistema', 'Stream finalizado. La conexión se ha cerrado.', 'system');
+        }
+
+        function toggleMic() {
+            micEnabled = !micEnabled;
+            
+            // Si el stream combinado existe y tiene la pista de audio de la cámara, controlarla
+            if (cameraStream && cameraStream.getAudioTracks().length > 0) {
+                cameraStream.getAudioTracks().forEach(track => {
+                    track.enabled = micEnabled;
+                });
+            }
+            // Controlar el audio de la pantalla también si está presente
+            if (screenStream && screenStream.getAudioTracks().length > 0) {
+                screenStream.getAudioTracks().forEach(track => {
+                    track.enabled = micEnabled;
+                });
+            }
+            
+            updateControlButtons();
+            showNotification(micEnabled ? 'Micrófono activado' : 'Micrófono desactivado', 'info');
+        }
+
+        function toggleCamera() {
+            cameraEnabled = !cameraEnabled;
+            cameraOverlay.style.display = cameraEnabled ? 'block' : 'none';
+            
+            if (cameraStream) {
+                cameraStream.getVideoTracks().forEach(track => {
+                    track.enabled = cameraEnabled;
+                });
+            }
+            
+            updateControlButtons();
+            showNotification(cameraEnabled ? 'Cámara activada' : 'Cámara desactivada', 'info');
+        }
+
+        async function toggleScreen() {
+            if (screenEnabled) { // Si la pantalla está compartiéndose, la detenemos
+                stopStream();
+            } else { // Si no, la iniciamos
+                await startStream();
+            }
+        }
+
+        function updateStreamButtons() {
+            const startBtn = document.getElementById('startStreamBtn');
+            const stopBtn = document.getElementById('stopStreamBtn');
+            
+            if (isStreaming) {
+                startBtn.classList.add('disabled');
+                startBtn.disabled = true;
+                stopBtn.classList.remove('disabled');
+                stopBtn.disabled = false;
+            } else {
+                startBtn.classList.remove('disabled');
+                startBtn.disabled = false;
+                stopBtn.classList.add('disabled');
+                stopBtn.disabled = true;
+            }
+        }
+
+        function updateControlButtons() {
+            const micBtn = document.getElementById('micBtn');
+            const cameraBtn = document.getElementById('cameraBtn');
+            const screenBtn = document.getElementById('screenBtn');
+            
+            micBtn.classList.toggle('active', micEnabled);
+            cameraBtn.classList.toggle('active', cameraEnabled);
+            screenBtn.classList.toggle('active', screenEnabled);
+        }
+
+        function updateStreamStatus() {
+            const statusElement = document.getElementById('streamStatus');
+            statusElement.textContent = viewerConnected ? 'Conectado a Viewer' : (isStreaming ? 'En Vivo (Esperando Viewer)' : 'Desconectado');
+            statusElement.style.color = viewerConnected ? '#00c851' : (isStreaming ? '#f39c12' : '#ff4444');
+        }
+
+        function startStreamTimer() {
+            if (streamTimer) clearInterval(streamTimer); // Asegurarse de que no haya múltiples timers
+            streamTimer = setInterval(() => {
+                if (streamStartTime) {
+                    const elapsed = Math.floor((new Date() - streamStartTime) / 1000);
+                    const hours = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+                    const minutes = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+                    const seconds = (elapsed % 60).toString().padStart(2, '0');
+                    
+                    document.getElementById('streamTime').textContent = `${hours}:${minutes}:${seconds}`;
+                }
+            }, 1000);
+        }
+
+        // --- Funciones WebRTC específicas del Streamer ---
+        async function createPeerConnection() {
+            if (pc && pc.connectionState !== 'closed') {
+                console.warn('PeerConnection ya existe y está activa o en proceso. Cerrando la anterior.');
+                pc.close();
+            }
+            pc = new RTCPeerConnection(configuration);
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log('Nuevo ICE candidate del streamer:', event.candidate);
+                    // No hay un lugar para pegarlo, se incluye en la oferta/respuesta final para este ejemplo.
+                    // En un escenario real, los candidatos se intercambian continuamente.
+                }
+            };
+
+            // Cuando el viewer añade sus pistas (no aplica en esta dirección)
+            pc.ontrack = (event) => {
+                console.log('Track recibido (del viewer, si envía):', event.track);
+                // No esperamos tracks del viewer en este ejemplo, pero es buena práctica tener el listener.
+            };
+
+            pc.oniceconnectionstatechange = () => {
+                console.log('ICE connection state:', pc.iceConnectionState);
+                if (pc.iceConnectionState === 'connected') {
+                    showNotification('Conexión ICE establecida.', 'success');
+                    updateStreamerConnectionStatus('Conexión WebRTC establecida (ICE)', 'green');
+                } else if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'closed') {
+                    showNotification('Conexión ICE fallida o desconectada.', 'error');
+                    updateStreamerConnectionStatus('Conexión ICE Fallida/Desconectada', 'red');
+                    viewerConnected = false;
+                    updateStreamStatus();
+                    messageInput.disabled = true;
+                    sendButton.disabled = true;
+                    viewerCountSpan.textContent = '0';
+                }
+            };
+
+            pc.onconnectionstatechange = () => {
+                console.log('WebRTC connection state:', pc.connectionState);
+                if (pc.connectionState === 'connected') {
+                    viewerConnected = true;
+                    updateStreamStatus();
+                    messageInput.disabled = false;
+                    sendButton.disabled = false;
+                    viewerCountSpan.textContent = '1'; // Suponemos un solo viewer para este ejemplo
+                    showNotification('¡Viewer conectado al stream!', 'success');
+                    addMessage('Sistema', 'Un viewer se ha conectado.', 'system');
+                } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                    viewerConnected = false;
+                    updateStreamStatus();
+                    messageInput.disabled = true;
+                    sendButton.disabled = true;
+                    viewerCountSpan.textContent = '0';
+                    showNotification('Viewer desconectado.', 'error');
+                    addMessage('Sistema', 'El viewer se ha desconectado.', 'system');
+                }
+            };
+
+            // Crear un canal de datos para el chat
+            dataChannel = pc.createDataChannel("chat");
+            setupDataChannel();
+
+            return pc;
+        }
+
+        function setupDataChannel() {
+            dataChannel.onopen = (event) => {
+                console.log("Data channel abierto:", event);
+                addMessage('Sistema', 'Canal de chat con el viewer abierto.', 'system');
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+            };
+            dataChannel.onmessage = (event) => {
+                console.log("Mensaje de chat recibido:", event.data);
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'chat') {
+                        addMessage(data.author || 'Viewer', data.message, 'viewer');
+                    }
+                } catch (e) {
+                    addMessage('Viewer', event.data, 'viewer'); // Mensaje simple si no es JSON
+                }
+            };
+            dataChannel.onclose = (event) => {
+                console.log("Data channel cerrado:", event);
+                addMessage('Sistema', 'Canal de chat con el viewer cerrado.', 'system');
+                messageInput.disabled = true;
+                sendButton.disabled = true;
+            };
+            dataChannel.onerror = (error) => {
+                console.error("Data channel error:", error);
+                showNotification('Error en el canal de chat.', 'error');
+            };
+        }
+
+        async function generateConnectionCode() {
+            generateOfferBtn.disabled = true;
+            copyOfferBtn.disabled = true;
+            updateStreamerConnectionStatus('Generando oferta...', 'yellow');
+
+            try {
+                // Asegurarse de que el stream de pantalla esté activo antes de generar la oferta
+                if (!isStreaming) {
+                    await startStream(); // Iniciar stream de pantalla si no está activo
+                }
+                
+                // Crear o reusar la PeerConnection
+                if (!pc || pc.connectionState === 'closed') {
+                    pc = await createPeerConnection();
+                }
+
+                // Añadir los tracks del stream combinado a la conexión P2P
+                // Esto se hace cada vez que se crea una nueva PC o se cambia el stream
+                if (combinedStream) {
+                    combinedStream.getTracks().forEach(track => {
+                        pc.addTrack(track, combinedStream);
+                    });
+                } else {
+                    showNotification('No hay stream combinado para enviar. Asegúrate de iniciar el stream.', 'error');
+                    generateOfferBtn.disabled = false;
+                    updateStreamerConnectionStatus('Error: No se pudo generar el stream.', 'red');
+                    return;
+                }
+
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+
+                // Esperar a que se recolecten los candidatos ICE iniciales
+                await new Promise(resolve => {
+                    if (pc.iceGatheringState === 'complete') {
+                        resolve();
+                    } else {
+                        const check = () => {
+                            if (pc.iceGatheringState === 'complete') {
+                                pc.removeEventListener('icegatheringstatechange', check);
+                                resolve();
+                            }
+                        };
+                        pc.addEventListener('icegatheringstatechange', check);
+                    }
+                });
+
+                const offerInfo = {
+                    offer: pc.localDescription,
+                    timestamp: Date.now()
+                };
+                
+                const offerCode = btoa(JSON.stringify(offerInfo));
+                offerDataInput.value = offerCode;
+                copyOfferBtn.disabled = false;
+                answerStep.style.display = 'block';
+                updateStreamerConnectionStatus('Oferta generada. Esperando respuesta del viewer.', 'yellow');
+                showNotification('Oferta generada. Comparte el código con el viewer.', 'info');
+
+            } catch (error) {
+                console.error('Error al generar la oferta:', error);
+                showNotification('Error al generar el código de conexión.', 'error');
+                generateOfferBtn.disabled = false;
+                updateStreamerConnectionStatus('Error al generar oferta.', 'red');
+            }
+        }
+
+        async function processAnswer() {
+            const answerText = answerDataInput.value.trim();
+            if (!answerText) {
+                alert('Por favor, pega el código de respuesta del viewer.');
+                return;
+            }
+
+            if (!pc || pc.signalingState === 'closed') {
+                showNotification('Primero debes generar un código de conexión.', 'error');
+                return;
+            }
+
+            connectViewerBtn.disabled = true;
+            updateStreamerConnectionStatus('Procesando respuesta...', 'yellow');
+
+            try {
+                const answerInfo = JSON.parse(atob(answerText));
+                if (!answerInfo.answer) {
+                    throw new Error('Formato de respuesta inválido.');
+                }
+                
+                await pc.setRemoteDescription(new RTCSessionDescription(answerInfo.answer));
+                
+                // Si la conexión es exitosa, ocultar la configuración y mostrar la interfaz de stream
+                connectionSetup.classList.add('hidden');
+                streamerInterface.classList.remove('hidden');
+                
+                updateStreamerConnectionStatus('Conectado al viewer.', 'green');
+                showNotification('Conexión con viewer establecida.', 'success');
+                // La función onconnectionstatechange de pc se encargará de actualizar el estado del chat y contador.
+
+            } catch (error) {
+                console.error('Error al procesar la respuesta:', error);
+                showNotification('Error al procesar el código de respuesta. Intenta de nuevo.', 'error');
+                connectViewerBtn.disabled = false;
+                updateStreamerConnectionStatus('Error al conectar viewer.', 'red');
+            }
+        }
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !dataChannel || dataChannel.readyState !== 'open') {
+                showNotification('Chat no disponible o no conectado.', 'error');
+                return;
+            }
+
+            try {
+                const messagePayload = JSON.stringify({
+                    type: 'chat',
+                    message: text,
+                    timestamp: Date.now(),
+                    author: 'Streamer'
+                });
+                dataChannel.send(messagePayload);
+                addMessage('Tú', text, 'streamer');
+                messageInput.value = '';
+            } catch (error) {
+                console.error('Error al enviar mensaje:', error);
+                showNotification('Error al enviar mensaje.', 'error');
+            }
+        }
+
+        // --- Funciones para arrastrar la cámara ---
+        function makeCameraDraggable() {
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 0;
+            let yOffset = 0;
+            
+            const restrictMovement = (x, y) => {
+                const parentRect = cameraOverlay.parentElement.getBoundingClientRect();
+                const overlayRect = cameraOverlay.getBoundingClientRect();
+
+                let newX = x;
+                let newY = y;
+
+                // Restringir al borde derecho (min-x)
+                if (newX + overlayRect.width > parentRect.width) {
+                    newX = parentRect.width - overlayRect.width;
+                }
+                // Restringir al borde inferior (min-y)
+                if (newY + overlayRect.height > parentRect.height) {
+                    newY = parentRect.height - overlayRect.height;
+                }
+                // Restringir al borde izquierdo (max-x)
+                if (newX < 0) {
+                    newX = 0;
+                }
+                // Restringir al borde superior (max-y)
+                if (newY < 0) {
+                    newY = 0;
+                }
+                return { x: newX, y: newY };
+            };
+
+            cameraOverlay.addEventListener('mousedown', dragStart);
+            document.addEventListener('mouseup', dragEnd);
+            document.addEventListener('mousemove', drag);
+
+            function dragStart(e) {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+
+                if (e.target === cameraOverlay || e.target === cameraVideo) {
+                    isDragging = true;
+                    cameraOverlay.style.cursor = 'grabbing';
+                    // Convertir a posición absoluta para arrastrar libremente
+                    const rect = cameraOverlay.getBoundingClientRect();
+                    cameraOverlay.style.position = 'fixed'; // Usar 'fixed' para arrastrar fuera del contenedor
+                    cameraOverlay.style.left = rect.left + 'px';
+                    cameraOverlay.style.top = rect.top + 'px';
+                    cameraOverlay.style.right = 'auto'; // Limpiar propiedades de posicionamiento original
+                    cameraOverlay.style.bottom = 'auto';
+                }
+            }
+
+            function dragEnd(e) {
+                initialX = currentX;
+                initialY = currentY;
+                isDragging = false;
+                cameraOverlay.style.cursor = 'move';
+                // Volver a posición relativa o absoluta dentro del contenedor original
+                cameraOverlay.style.position = 'absolute';
+                cameraOverlay.style.left = ''; // Limpiar left/top si queremos usar right/bottom de nuevo
+                cameraOverlay.style.top = ''; 
+                cameraOverlay.style.bottom = '20px'; // Restaurar posición original
+                cameraOverlay.style.right = '20px';
+            }
+
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+
+                    xOffset = currentX;
+                    yOffset = currentY;
+
+                    const newPos = restrictMovement(currentX, currentY);
+                    
+                    cameraOverlay.style.left = newPos.x + 'px';
+                    cameraOverlay.style.top = newPos.y + 'px';
+                }
+            }
+        }
+
+
+        // --- Almacenamiento Local (Chat y Stream Data) ---
+        function saveChatToStorage() {
+            try {
+                const chatData = {
+                    messages: messages,
+                    lastUpdate: new Date().toISOString()
+                };
+                localStorage.setItem('streamPlatformChat', JSON.stringify(chatData));
+            } catch (error) {
+                console.warn('No se pudo guardar el chat:', error);
+            }
+        }
+
+        function loadChatFromStorage() {
+            try {
+                const chatData = localStorage.getItem('streamPlatformChat');
+                if (chatData) {
+                    const parsed = JSON.parse(chatData);
+                    messages = parsed.messages || [];
+                    displayMessages();
+                }
+            } catch (error) {
+                console.warn('No se pudo cargar el chat:', error);
+            }
+        }
+
+        function displayMessages() {
+            const chatMessages = document.getElementById('chatMessages');
+            
+            const messagesHTML = messages.map(msg => {
+                const authorColor = msg.type === 'viewer' ? '#667eea' : msg.type === 'system' ? '#f39c12' : '#8b45ff';
+                return `
+                    <div class="message slide-up">
+                        <div class="message-author" style="color: ${authorColor};">${msg.author}</div>
+                        <div class="message-text">${msg.text}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            chatMessages.innerHTML = messagesHTML;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function saveStreamData() {
+            try {
+                const streamData = {
+                    isStreaming: isStreaming,
+                    streamTitle: streamTitle,
+                    micEnabled: micEnabled,
+                    cameraEnabled: cameraEnabled,
+                    screenEnabled: screenEnabled,
+                    lastUpdate: new Date().toISOString()
+                };
+                localStorage.setItem('streamPlatformData', JSON.stringify(streamData));
+            } catch (error) {
+                console.warn('No se pudo guardar los datos del stream:', error);
+            }
+        }
+
+        function updateUI() {
+            updateStreamButtons();
+            updateControlButtons();
+            updateStreamStatus();
+        }
+
+        function openSettings() {
+            showNotification('Panel de configuración (próximamente)', 'info');
+        }
+
+        document.getElementById('streamTitle').addEventListener('input', function(e) {
+            streamTitle = e.target.value || 'Mi stream en vivo';
+            saveStreamData();
+        });
+
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && isStreaming) {
+                showNotification('Stream continuando en segundo plano', 'info');
+            }
+        });
+
+        window.addEventListener('beforeunload', function(e) {
+            if (isStreaming || (pc && pc.connectionState !== 'closed')) {
+                e.preventDefault();
+                e.returnValue = '¿Estás seguro de que quieres salir? Tu stream se detendrá.';
+                return e.returnValue;
+            }
+        });
+
+        // Actualizar contador de viewers simulado (cambiado para reflejar la conexión P2P)
+        setInterval(() => {
+            if (viewerConnected) {
+                viewerCountSpan.textContent = '1';
+            } else {
+                viewerCountSpan.textContent = '0';
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
