@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamPlatform - Ver Stream</title>
+    <style>
+        /* General styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%); color: #ffffff; min-height: 100vh; display: flex; flex-direction: column; }
+        .navbar { background: rgba(20, 20, 35, 0.95); backdrop-filter: blur(10px); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(139, 69, 255, 0.3); position: sticky; top: 0; z-index: 1000; }
+        .logo { font-size: 1.8rem; font-weight: 800; background: linear-gradient(45deg, #8b45ff, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .nav-buttons { display: flex; gap: 1rem; }
+        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 25px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; text-decoration: none; color: inherit; display: inline-block; }
+        .btn-primary { background: linear-gradient(45deg, #8b45ff, #ff6b6b); color: white; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(139, 69, 255, 0.4); }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; width: 100%; flex-grow: 1; display: flex; flex-direction: column; }
+
+        /* Viewer Layout */
+        .viewer-layout { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; height: calc(100vh - 140px - 4rem); }
+        .viewer-area { background: rgba(20, 20, 35, 0.8); border-radius: 20px; padding: 1.5rem; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); border: 1px solid rgba(139, 69, 255, 0.2); display: flex; flex-direction: column; }
+        .stream-info { margin-bottom: 1.5rem; padding: 1rem; background: rgba(139, 69, 255, 0.1); border-radius: 15px; border: 1px solid rgba(139, 69, 255, 0.3); }
+        .stream-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #8b45ff; }
+        .stream-status { color: rgba(255, 255, 255, 0.7); font-size: 0.9rem; }
+        .status-live { display: inline-flex; align-items: center; gap: 0.5rem; color: #00c851; font-weight: 600; }
+        .status-dot { width: 8px; height: 8px; background: #00c851; border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .video-container { position: relative; background: #000; border-radius: 15px; overflow: hidden; aspect-ratio: 16/9; margin-bottom: 1rem; flex-grow: 1; }
+        .viewer-video { width: 100%; height: 100%; object-fit: cover; background: #000; border-radius: 15px; }
+
+        /* Chat */
+        .sidebar { background: rgba(20, 20, 35, 0.9); border-radius: 20px; padding: 1.5rem; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); border: 1px solid rgba(139, 69, 255, 0.2); display: flex; flex-direction: column; }
+        .chat-header { text-align: center; margin-bottom: 1rem; padding: 1rem; background: linear-gradient(45deg, #8b45ff, #ff6b6b); border-radius: 15px; font-weight: 700; font-size: 1.1rem; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 1rem; background: rgba(0, 0, 0, 0.3); border-radius: 15px; margin-bottom: 1rem; max-height: 400px; }
+        .message { margin-bottom: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 10px; border-left: 3px solid #8b45ff; }
+        .message-author { font-weight: 600; color: #8b45ff; margin-bottom: 0.25rem; }
+        .message-text { color: rgba(255, 255, 255, 0.9); line-height: 1.4; }
+        .chat-input { display: flex; gap: 0.5rem; margin-top: auto; }
+        .chat-input input { flex: 1; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px; color: white; }
+        .chat-input input::placeholder { color: rgba(255, 255, 255, 0.6); }
+        .send-btn { padding: 0.75rem 1rem; background: linear-gradient(45deg, #8b45ff, #ff6b6b); border: none; border-radius: 10px; color: white; cursor: pointer; font-weight: 600; }
+
+        /* Setup Panel */
+        .setup-panel {
+            background: rgba(20, 20, 35, 0.9);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(139, 69, 255, 0.2);
+            text-align: center;
+            max-width: 500px;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            height: fit-content;
+        }
+        .setup-panel h3 {
+            color: #8b45ff;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+        .setup-panel label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .setup-panel input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 1rem;
+        }
+        .setup-panel input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .setup-panel .btn {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            border-radius: 15px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .viewer-layout { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+            .sidebar { max-height: 300px; }
+        }
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .navbar { padding: 1rem; }
+            .nav-buttons { flex-direction: column; gap: 0.5rem; }
+        }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .slide-up { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        /* Notification Animations */
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { from { transform: translateX(0); opacity: 0; } to { transform: translateX(100%); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🎮 StreamPlatform</div>
+        <div class="nav-buttons">
+            <a href="stream.html" class="btn btn-secondary">Transmitir</a>
+            <a href="view.html" class="btn btn-primary">Ver Stream</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="setup-panel fade-in" id="setupPanel">
+            <h3>Conectar al Stream</h3>
+            <div>
+                <label for="streamId">ID del Stream:</label>
+                <input type="text" id="streamId" placeholder="Introduce el ID del stream al que quieres conectarte">
+            </div>
+            <button class="btn btn-primary" id="connectBtn">Conectar al Stream</button>
+        </div>
+
+        <div class="viewer-layout fade-in" id="viewPanel" style="display: none;">
+            <div class="viewer-area">
+                <div class="stream-info">
+                    <div class="stream-title" id="viewerTitle">Stream no disponible</div>
+                    <div class="stream-status">
+                        <span class="status-live" id="liveStatus" style="display: none;">
+                            <span class="status-dot"></span>
+                            EN VIVO
+                        </span>
+                        <span id="offlineStatus">Stream no disponible</span>
+                    </div>
+                </div>
+                
+                <div class="video-container">
+                    <video id="viewerVideo" class="viewer-video" autoplay controls></video>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="chat-header">💬 Chat del Stream</div>
+                <div class="chat-messages" id="viewerChatMessages"></div>
+                <div class="chat-input">
+                    <input type="text" id="viewerMessageInput" placeholder="Únete a la conversación..." onkeypress="handleViewerEnter(event)">
+                    <button class="send-btn" onclick="sendViewerMessage()">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script>
+        // Variables globales
+        let currentPeer = null;
+        let currentStreamId = ''; // El ID al que el espectador intenta conectarse
+        let dataConnection = null; // Conexión de datos para el chat
+        let mediaCall = null;      // Conexión de medios para el video/audio
+        let messages = [];
+
+        // Elementos del DOM
+        const viewerVideo = document.getElementById('viewerVideo');
+        const viewerTitle = document.getElementById('viewerTitle');
+        const liveStatus = document.getElementById('liveStatus');
+        const offlineStatus = document.getElementById('offlineStatus');
+        const setupPanel = document.getElementById('setupPanel');
+        const viewPanel = document.getElementById('viewPanel');
+        const streamIdInput = document.getElementById('streamId');
+        const connectBtn = document.getElementById('connectBtn');
+        const viewerChatMessages = document.getElementById('viewerChatMessages');
+        const viewerMessageInput = document.getElementById('viewerMessageInput');
+
+        // Inicialización y Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            connectBtn.addEventListener('click', initializePeerConnection);
+            updateStreamStatus(false); // Estado inicial
+        });
+
+        // --- Funciones de Conexión PeerJS ---
+
+        function initializePeerConnection() {
+            const inputId = streamIdInput.value.trim();
+            if (!inputId) {
+                showNotification('Por favor, ingresa el ID del Stream.', 'error');
+                return;
+            }
+            currentStreamId = inputId;
+
+            if (currentPeer && currentPeer.open) {
+                currentPeer.destroy(); // Limpiar conexión PeerJS anterior si existe
+            }
+
+            currentPeer = new Peer({
+                host: 'peerjs.com',
+                port: 443,
+                path: '/',
+                secure: true
+            });
+
+            currentPeer.on('open', (id) => {
+                console.log('PeerJS abierto con ID local:', id);
+                showNotification(`Conectado al servidor PeerJS. Intentando conectar al stream "${currentStreamId}"...`, 'info');
+                connectToStreamer(currentStreamId);
+            });
+
+            currentPeer.on('error', (err) => {
+                console.error('PeerJS error:', err);
+                showNotification(`Error en la conexión PeerJS: ${err.message}`, 'error');
+                updateStreamStatus(false);
+            });
+
+            currentPeer.on('disconnected', () => {
+                console.log('PeerJS desconectado del servidor. Reintentando...');
+                showNotification('Conexión con el servidor PeerJS perdida. Reintentando...', 'error');
+                updateStreamStatus(false);
+                // Opcional: Reintentar inicializar PeerJS después de un breve retardo
+                // setTimeout(() => initializePeerConnection(), 5000); 
+            });
+        }
+
+        function connectToStreamer(streamerPeerId) {
+            // **Paso 1: Conexión de Datos (para chat y metadatos)**
+            dataConnection = currentPeer.connect(streamerPeerId);
+
+            dataConnection.on('open', () => {
+                console.log(`Conexión de datos abierta con el streamer (${streamerPeerId})`);
+                showNotification('Conectado al chat del stream.', 'success');
+                // Mostrar el panel de visualización
+                setupPanel.style.display = 'none';
+                viewPanel.style.display = 'grid'; // Usar grid para el layout
+                // Ahora que la conexión de datos está abierta, iniciar la llamada de medios
+                startMediaCall(streamerPeerId);
+            });
+
+            dataConnection.on('data', (data) => {
+                const parsedData = JSON.parse(data);
+                if (parsedData.type === 'chat') {
+                    addMessage(parsedData.author, parsedData.message);
+                } else if (parsedData.type === 'chatHistory') {
+                    messages = parsedData.messages;
+                    displayMessages();
+                } else if (parsedData.type === 'streamTitle') {
+                    viewerTitle.textContent = parsedData.title;
+                }
+            });
+
+            dataConnection.on('close', () => {
+                console.log('Conexión de datos cerrada.');
+                showNotification('Desconectado del chat del stream.', 'info');
+                updateStreamStatus(false);
+                // Opcional: intentar reconectar o mostrar un mensaje de error
+            });
+
+            dataConnection.on('error', (err) => {
+                console.error('Error en la conexión de datos:', err);
+                showNotification(`Error en el chat: ${err.message}`, 'error');
+                updateStreamStatus(false);
+            });
+        }
+
+        function startMediaCall(streamerPeerId) {
+            // **Paso 2: Llamada de Medios (para video/audio)**
+            // No pasamos un stream local si no queremos enviar nuestra cámara al streamer
+            mediaCall = currentPeer.call(streamerPeerId, null); 
+
+            mediaCall.on('stream', (remoteStream) => {
+                console.log('Recibiendo stream remoto.');
+                viewerVideo.srcObject = remoteStream;
+                viewerVideo.play().catch(e => console.error("Error al reproducir el video del streamer:", e));
+                updateStreamStatus(true);
+            });
+
+            mediaCall.on('close', () => {
+                console.log('Llamada de medios cerrada.');
+                viewerVideo.srcObject = null;
+                updateStreamStatus(false);
+                showNotification('Stream terminado o desconectado.', 'info');
+            });
+
+            mediaCall.on('error', (err) => {
+                console.error('Error en la llamada de medios:', err);
+                showNotification(`Error en el video del stream: ${err.message}`, 'error');
+                viewerVideo.srcObject = null;
+                updateStreamStatus(false);
+            });
+        }
+
+        // --- Funciones de UI y Chat ---
+
+        function updateStreamStatus(isLive) {
+            if (isLive) {
+                liveStatus.style.display = 'flex';
+                offlineStatus.style.display = 'none';
+                // El título se actualiza con el mensaje 'streamTitle' del streamer
+            } else {
+                liveStatus.style.display = 'none';
+                offlineStatus.style.display = 'block';
+                viewerTitle.textContent = `Stream no disponible`;
+            }
+        }
+
+        function sendViewerMessage() {
+            const message = viewerMessageInput.value.trim();
+            if (message && dataConnection && dataConnection.open) {
+                addMessage('Espectador', message);
+                viewerMessageInput.value = '';
+                dataConnection.send(JSON.stringify({ type: 'chat', author: 'Espectador', message: message }));
+            } else {
+                showNotification('No estás conectado al chat. Ingresa un ID de Stream para conectarte.', 'error');
+            }
+        }
+
+        function addMessage(author, text) {
+            const message = {
+                author: author,
+                text: text,
+                timestamp: new Date().toLocaleTimeString()
+            };
+            messages.push(message);
+            displayMessages();
+        }
+
+        function displayMessages() {
+            const messagesHTML = messages.map(msg => `
+                <div class="message slide-up">
+                    <div class="message-author">${msg.author} <span style="font-size: 0.7em; opacity: 0.7;">${msg.timestamp}</span></div>
+                    <div class="message-text">${msg.text}</div>
+                </div>
+            `).join('');
+            viewerChatMessages.innerHTML = messagesHTML;
+            viewerChatMessages.scrollTop = viewerChatMessages.scrollHeight; 
+        }
+
+        function handleViewerEnter(event) {
+            if (event.key === 'Enter') {
+                sendViewerMessage();
+            }
+        }
+
+        // --- Sistema de Notificaciones ---
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                border-radius: 10px;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                animation: slideIn 0.3s ease-out;
+                max-width: 300px;
+            `;
+            
+            switch(type) {
+                case 'success': notification.style.background = 'linear-gradient(45deg, #00c851, #00ff7f)'; break;
+                case 'error': notification.style.background = 'linear-gradient(45deg, #ff4444, #cc0000)'; break;
+                case 'info': notification.style.background = 'linear-gradient(45deg, #8b45ff, #ff6b6b)'; break;
+                default: notification.style.background = 'linear-gradient(45deg, #333, #666)';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in forwards';
+                setTimeout(() => { document.body.removeChild(notification); }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamPlatform - Transmitir</title>
+    <style>
+        /* General styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%); color: #ffffff; min-height: 100vh; display: flex; flex-direction: column; }
+        .navbar { background: rgba(20, 20, 35, 0.95); backdrop-filter: blur(10px); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(139, 69, 255, 0.3); position: sticky; top: 0; z-index: 1000; }
+        .logo { font-size: 1.8rem; font-weight: 800; background: linear-gradient(45deg, #8b45ff, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .nav-buttons { display: flex; gap: 1rem; }
+        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 25px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; text-decoration: none; color: inherit; display: inline-block; }
+        .btn-primary { background: linear-gradient(45deg, #8b45ff, #ff6b6b); color: white; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(139, 69, 255, 0.4); }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; width: 100%; flex-grow: 1; display: flex; flex-direction: column; }
+
+        /* Streamer Layout */
+        .streamer-layout { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; height: calc(100vh - 140px - 4rem); }
+        .stream-area { background: rgba(20, 20, 35, 0.8); border-radius: 20px; padding: 1.5rem; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); border: 1px solid rgba(139, 69, 255, 0.2); display: flex; flex-direction: column; }
+        .stream-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 1rem; background: rgba(139, 69, 255, 0.1); border-radius: 15px; border: 1px solid rgba(139, 69, 255, 0.3); }
+        .title-input { flex: 1; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px; color: white; font-size: 1rem; margin-right: 1rem; }
+        .title-input::placeholder { color: rgba(255, 255, 255, 0.6); }
+        .stream-buttons { display: flex; gap: 0.5rem; }
+        .stream-btn { padding: 0.75rem 1rem; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 0.8rem; }
+        .stream-btn.start { background: linear-gradient(45deg, #00c851, #00ff7f); color: white; }
+        .stream-btn.stop { background: linear-gradient(45deg, #ff4444, #cc0000); color: white; }
+        .stream-btn.disabled { background: rgba(255, 255, 255, 0.2); color: rgba(255, 255, 255, 0.5); cursor: not-allowed; }
+
+        .video-container { position: relative; background: #000; border-radius: 15px; overflow: hidden; aspect-ratio: 16/9; margin-bottom: 1rem; flex-grow: 1; }
+        .video-stream { width: 100%; height: 100%; object-fit: cover; }
+        .camera-overlay { position: absolute; bottom: 20px; right: 20px; width: 200px; height: 150px; background: #000; border-radius: 10px; overflow: hidden; border: 2px solid #8b45ff; cursor: move; z-index: 10; display: none; /* Hidden by default */ }
+        .camera-video { width: 100%; height: 100%; object-fit: cover; }
+
+        .media-controls { display: flex; justify-content: center; gap: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.5); border-radius: 15px; margin-top: auto; }
+        .control-btn { padding: 0.75rem; border: none; border-radius: 50%; background: rgba(139, 69, 255, 0.8); color: white; cursor: pointer; transition: all 0.3s ease; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; }
+        .control-btn:hover { background: #8b45ff; transform: scale(1.1); }
+        .control-btn.active { background: #00c851; }
+
+        /* Chat */
+        .sidebar { background: rgba(20, 20, 35, 0.9); border-radius: 20px; padding: 1.5rem; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); border: 1px solid rgba(139, 69, 255, 0.2); display: flex; flex-direction: column; }
+        .chat-header { text-align: center; margin-bottom: 1rem; padding: 1rem; background: linear-gradient(45deg, #8b45ff, #ff6b6b); border-radius: 15px; font-weight: 700; font-size: 1.1rem; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 1rem; background: rgba(0, 0, 0, 0.3); border-radius: 15px; margin-bottom: 1rem; max-height: 400px; }
+        .message { margin-bottom: 0.75rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 10px; border-left: 3px solid #8b45ff; }
+        .message-author { font-weight: 600; color: #8b45ff; margin-bottom: 0.25rem; }
+        .message-text { color: rgba(255, 255, 255, 0.9); line-height: 1.4; }
+        .chat-input { display: flex; gap: 0.5rem; margin-top: auto; }
+        .chat-input input { flex: 1; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px; color: white; }
+        .chat-input input::placeholder { color: rgba(255, 255, 255, 0.6); }
+        .send-btn { padding: 0.75rem 1rem; background: linear-gradient(45deg, #8b45ff, #ff6b6b); border: none; border-radius: 10px; color: white; cursor: pointer; font-weight: 600; }
+
+        /* Setup Panel */
+        .setup-panel {
+            background: rgba(20, 20, 35, 0.9);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(139, 69, 255, 0.2);
+            text-align: center;
+            max-width: 500px;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            height: fit-content;
+        }
+        .setup-panel h3 {
+            color: #8b45ff;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+        .setup-panel label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .setup-panel input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 1rem;
+        }
+        .setup-panel input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .setup-panel .btn {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            border-radius: 15px;
+        }
+        .setup-panel .option-buttons {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px;
+        }
+        .setup-panel .option-buttons .btn {
+            flex: 1;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .streamer-layout { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+            .sidebar { max-height: 300px; }
+            .camera-overlay { width: 150px; height: 100px; }
+        }
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .navbar { padding: 1rem; }
+            .nav-buttons { flex-direction: column; gap: 0.5rem; }
+        }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .slide-up { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Notification Animations */
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { from { transform: translateX(0); opacity: 0; } to { transform: translateX(100%); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🎮 StreamPlatform</div>
+        <div class="nav-buttons">
+            <a href="stream.html" class="btn btn-primary">Transmitir</a>
+            <a href="view.html" class="btn btn-secondary">Ver Stream</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="setup-panel fade-in" id="setupPanel">
+            <h3>Configuración del Stream</h3>
+            <div>
+                <label for="streamId">ID del Stream:</label>
+                <input type="text" id="streamId" placeholder="Introduce un ID único para tu stream (ej: mi-stream-en-vivo)">
+            </div>
+            <div class="option-buttons">
+                <button class="btn btn-primary" id="startScreenShareBtn">Compartir Pantalla</button>
+                <button class="btn btn-secondary" id="startCameraStreamBtn">Usar Cámara</button>
+            </div>
+        </div>
+
+        <div class="streamer-layout fade-in" id="streamPanel" style="display: none;">
+            <div class="stream-area">
+                <div class="stream-controls">
+                    <input type="text" class="title-input" id="streamTitle" placeholder="Título de tu stream..." value="Mi stream en vivo">
+                    <div class="stream-buttons">
+                        <button class="stream-btn stop" id="stopStreamBtn" onclick="stopStream()">⏹ Detener Stream</button>
+                    </div>
+                </div>
+                
+                <div class="video-container">
+                    <video id="mainStreamVideo" class="video-stream" autoplay muted></video>
+                    <div class="camera-overlay" id="cameraOverlay">
+                        <video id="pipCameraVideo" class="camera-video" autoplay muted></video>
+                    </div>
+                </div>
+                
+                <div class="media-controls">
+                    <button class="control-btn" id="micBtn" onclick="toggleMic()" title="Micrófono">🎤</button>
+                    <button class="control-btn" id="cameraBtn" onclick="togglePiPCamera()" title="Cámara PiP">📹</button>
+                    <button class="control-btn" id="streamSourceBtn" onclick="switchStreamSource()" title="Cambiar Fuente">🔄</button>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="chat-header">💬 Chat en Vivo</div>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="Escribe un mensaje..." onkeypress="handleEnter(event)">
+                    <button class="send-btn" onclick="sendMessage()">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script>
+        // Variables globales
+        let currentPeer = null;
+        let currentStreamId = '';
+        let mainStream = null; // El stream principal (pantalla o cámara)
+        let pipCameraStream = null; // Stream para la cámara Picture-in-Picture (si se usa)
+        let micEnabled = true;
+        let pipCameraEnabled = false; // Indica si la cámara PiP está activa y visible
+        let isSharingScreen = false; // True si estamos compartiendo pantalla, false si es cámara
+        let activeConnections = new Map(); // Mapa de {peerId: PeerJS.Call}
+        let chatConnections = new Map(); // Mapa de {peerId: PeerJS.DataConnection}
+        let messages = [];
+
+        // Elementos del DOM
+        const mainStreamVideo = document.getElementById('mainStreamVideo');
+        const pipCameraVideo = document.getElementById('pipCameraVideo');
+        const cameraOverlay = document.getElementById('cameraOverlay');
+        const setupPanel = document.getElementById('setupPanel');
+        const streamPanel = document.getElementById('streamPanel');
+        const streamIdInput = document.getElementById('streamId');
+        const startScreenShareBtn = document.getElementById('startScreenShareBtn');
+        const startCameraStreamBtn = document.getElementById('startCameraStreamBtn');
+        const stopStreamBtn = document.getElementById('stopStreamBtn');
+        const micBtn = document.getElementById('micBtn');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const streamSourceBtn = document.getElementById('streamSourceBtn');
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const streamTitleInput = document.getElementById('streamTitle');
+
+        // Inicialización y Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            initializePiPCamera(); // Intentar iniciar la cámara para PiP al cargar
+            makeCameraDraggable();
+            updateControlButtons();
+
+            startScreenShareBtn.addEventListener('click', () => startStreaming('screen'));
+            startCameraStreamBtn.addEventListener('click', () => startStreaming('camera'));
+            stopStreamBtn.addEventListener('click', stopStream);
+        });
+
+        // --- Funciones de Streaming y PeerJS ---
+
+        async function initializePeerJS(streamId) {
+            if (currentPeer && currentPeer.open) {
+                currentPeer.destroy(); // Asegurar que no haya conexiones previas
+            }
+
+            currentPeer = new Peer(streamId, {
+                host: 'peerjs.com',
+                port: 443,
+                path: '/',
+                secure: true
+            });
+
+            currentPeer.on('open', (id) => {
+                console.log('PeerJS abierto con ID:', id);
+                showNotification(`Listo para transmitir con ID: ${id}. Compártelo con tus espectadores.`, 'success');
+                currentStreamId = id; // Guardar el ID asignado por PeerJS
+                setupPanel.style.display = 'none';
+                streamPanel.style.display = 'grid'; // Mostrar el panel de streaming
+            });
+
+            currentPeer.on('call', (call) => {
+                // Responder a las llamadas de video/audio
+                if (mainStream) {
+                    call.answer(mainStream); // Usa el stream principal para responder
+                    activeConnections.set(call.peer, call);
+                    console.log(`Llamada entrante de ${call.peer} respondida.`);
+
+                    call.on('close', () => {
+                        console.log(`Conexión de llamada con ${call.peer} cerrada.`);
+                        activeConnections.delete(call.peer);
+                    });
+                    call.on('error', (err) => {
+                        console.error(`Error en la llamada con ${call.peer}:`, err);
+                        activeConnections.delete(call.peer);
+                    });
+                } else {
+                    console.warn('No hay stream principal activo para responder la llamada.');
+                    call.close();
+                }
+            });
+
+            currentPeer.on('connection', (conn) => {
+                // Conexiones de datos (para chat)
+                chatConnections.set(conn.peer, conn);
+                console.log(`Conexión de datos abierta con ${conn.peer}`);
+
+                conn.on('data', (data) => {
+                    const parsedData = JSON.parse(data); // Los datos del chat son JSON
+                    if (parsedData.type === 'chat') {
+                        addMessage(parsedData.author, parsedData.message);
+                    }
+                });
+
+                conn.on('open', () => {
+                    // Enviar historial de chat al nuevo espectador
+                    conn.send(JSON.stringify({ type: 'chatHistory', messages: messages }));
+                });
+
+                conn.on('close', () => {
+                    console.log(`Conexión de datos con ${conn.peer} cerrada.`);
+                    chatConnections.delete(conn.peer);
+                });
+                conn.on('error', (err) => {
+                    console.error(`Error en la conexión de datos con ${conn.peer}:`, err);
+                    chatConnections.delete(conn.peer);
+                });
+            });
+
+            currentPeer.on('disconnected', () => {
+                console.log('PeerJS desconectado. Intentando reconectar...');
+                showNotification('Conexión con el servidor PeerJS perdida. Reintentando...', 'error');
+            });
+
+            currentPeer.on('error', (err) => {
+                console.error('PeerJS error:', err);
+                showNotification(`Error en PeerJS: ${err.message}`, 'error');
+                // currentPeer.destroy(); // Podría ser necesario reiniciar la página para un error grave
+            });
+        }
+
+        async function startStreaming(source) {
+            const inputId = streamIdInput.value.trim();
+            if (!inputId) {
+                showNotification('Por favor, ingresa un ID de Stream único.', 'error');
+                return;
+            }
+
+            if (!currentPeer || !currentPeer.open || currentStreamId !== inputId) {
+                await initializePeerJS(inputId);
+                // Esperar a que PeerJS se abra antes de continuar
+                await new Promise(resolve => currentPeer.on('open', resolve));
+            }
+
+            try {
+                if (mainStream) {
+                    mainStream.getTracks().forEach(track => track.stop());
+                }
+
+                if (source === 'screen') {
+                    mainStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                    isSharingScreen = true;
+                    showNotification('Compartiendo pantalla.', 'success');
+                    mainStream.getVideoTracks()[0].addEventListener('ended', () => {
+                        showNotification('La compartición de pantalla ha terminado.', 'info');
+                        stopStream();
+                    });
+                } else if (source === 'camera') {
+                    mainStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    isSharingScreen = false;
+                    showNotification('Usando cámara principal.', 'success');
+                }
+                
+                mainStreamVideo.srcObject = mainStream;
+                mainStreamVideo.play();
+                
+                // Asegurar que el audio del stream principal (si es de pantalla) también esté controlado
+                if (mainStream.getAudioTracks().length > 0) {
+                    mainStream.getAudioTracks()[0].enabled = micEnabled;
+                }
+
+                // Si la cámara PiP está habilitada, la mantenemos, si no la ocultamos
+                cameraOverlay.style.display = pipCameraEnabled ? 'block' : 'none';
+
+                // Re-negociar la llamada con los espectadores existentes con el nuevo stream
+                activeConnections.forEach(call => {
+                    // Una forma simple es cerrar y reabrir la llamada.
+                    // Para una gestión más robusta, se usarían addTrack/removeTrack si el tipo de stream no cambia.
+                    call.close(); 
+                    currentPeer.call(call.peer, mainStream); // Volver a llamar con el nuevo stream
+                });
+
+                stopStreamBtn.classList.remove('disabled');
+                updateControlButtons();
+            } catch (error) {
+                console.error('Error al iniciar stream:', error);
+                showNotification(`Error al iniciar el stream: ${error.message}.`, 'error');
+                stopStream();
+            }
+        }
+
+        function stopStream() {
+            if (mainStream) {
+                mainStream.getTracks().forEach(track => track.stop());
+                mainStream = null;
+            }
+            mainStreamVideo.srcObject = null;
+            stopStreamBtn.classList.add('disabled');
+            showNotification('Stream detenido.', 'info');
+            // Cierra todas las conexiones activas al detener el stream
+            activeConnections.forEach(call => call.close());
+            activeConnections.clear();
+            chatConnections.forEach(conn => conn.close());
+            chatConnections.clear();
+            if (currentPeer) {
+                currentPeer.destroy();
+                currentPeer = null;
+            }
+
+            // Mostrar de nuevo el panel de configuración
+            setupPanel.style.display = 'flex';
+            streamPanel.style.display = 'none';
+
+            isSharingScreen = false; // Resetear estado
+            updateControlButtons();
+        }
+
+        async function initializePiPCamera() {
+            try {
+                pipCameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); // Solo video para PiP
+                pipCameraVideo.srcObject = pipCameraStream;
+                pipCameraVideo.play();
+            } catch (error) {
+                console.warn('No se pudo acceder a la cámara para Picture-in-Picture:', error);
+                // Si la cámara PiP no se puede iniciar, el botón estará deshabilitado
+                cameraBtn.disabled = true;
+            }
+        }
+
+        function toggleMic() {
+            micEnabled = !micEnabled;
+            if (mainStream && mainStream.getAudioTracks().length > 0) {
+                mainStream.getAudioTracks()[0].enabled = micEnabled;
+            }
+            updateControlButtons();
+            showNotification(micEnabled ? 'Micrófono activado' : 'Micrófono desactivado', 'info');
+        }
+
+        function togglePiPCamera() {
+            if (!pipCameraStream) {
+                showNotification('Cámara PiP no disponible. Permisos denegados o no hay cámara.', 'error');
+                return;
+            }
+            pipCameraEnabled = !pipCameraEnabled;
+            cameraOverlay.style.display = pipCameraEnabled ? 'block' : 'none';
+            if (pipCameraStream.getVideoTracks().length > 0) {
+                pipCameraStream.getVideoTracks()[0].enabled = pipCameraEnabled;
+            }
+            updateControlButtons();
+            showNotification(pipCameraEnabled ? 'Cámara PiP activada' : 'Cámara PiP desactivada', 'info');
+        }
+
+        async function switchStreamSource() {
+            // Permite al streamer cambiar entre pantalla y cámara sin detener todo el stream
+            if (isSharingScreen) {
+                await startStreaming('camera');
+            } else {
+                await startStreaming('screen');
+            }
+        }
+
+        // --- Funciones de UI y Utilidad ---
+
+        function updateControlButtons() {
+            micBtn.classList.toggle('active', micEnabled);
+            cameraBtn.classList.toggle('active', pipCameraEnabled);
+            streamSourceBtn.textContent = isSharingScreen ? '🔄 Usar Cámara' : '🔄 Compartir Pantalla';
+            streamSourceBtn.classList.toggle('active', isSharingScreen); // Indica qué fuente está activa
+        }
+
+        function makeCameraDraggable() {
+            let isDragging = false;
+            let startX, startY, startLeft, startTop;
+            
+            cameraOverlay.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                startLeft = cameraOverlay.offsetLeft; 
+                startTop = cameraOverlay.offsetTop; 
+                
+                cameraOverlay.style.cursor = 'grabbing';
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging) return;
+                
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                // Limitar el movimiento para que no salga del contenedor
+                const parentRect = cameraOverlay.parentElement.getBoundingClientRect();
+                const overlayRect = cameraOverlay.getBoundingClientRect();
+
+                let newLeft = startLeft + dx;
+                let newTop = startTop + dy;
+
+                newLeft = Math.max(0, Math.min(newLeft, parentRect.width - overlayRect.width));
+                newTop = Math.max(0, Math.min(newTop, parentRect.height - overlayRect.height));
+
+                cameraOverlay.style.left = newLeft + 'px';
+                cameraOverlay.style.top = newTop + 'px';
+            });
+            
+            document.addEventListener('mouseup', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    cameraOverlay.style.cursor = 'move';
+                }
+            });
+        }
+
+        // --- Funciones de Chat ---
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message) {
+                addMessage('Streamer', message);
+                messageInput.value = '';
+                // Enviar mensaje de chat a todos los espectadores conectados
+                chatConnections.forEach(conn => {
+                    if (conn.open) {
+                        conn.send(JSON.stringify({ type: 'chat', author: 'Streamer', message: message }));
+                    }
+                });
+            }
+        }
+
+        function addMessage(author, text) {
+            const message = {
+                author: author,
+                text: text,
+                timestamp: new Date().toLocaleTimeString()
+            };
+            messages.push(message);
+            displayMessages();
+        }
+
+        function displayMessages() {
+            const messagesHTML = messages.map(msg => `
+                <div class="message slide-up">
+                    <div class="message-author">${msg.author} <span style="font-size: 0.7em; opacity: 0.7;">${msg.timestamp}</span></div>
+                    <div class="message-text">${msg.text}</div>
+                </div>
+            `).join('');
+            chatMessages.innerHTML = messagesHTML;
+            chatMessages.scrollTop = chatMessages.scrollHeight; 
+        }
+
+        function handleEnter(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // --- Sistema de Notificaciones ---
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                border-radius: 10px;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                animation: slideIn 0.3s ease-out;
+                max-width: 300px;
+            `;
+            
+            switch(type) {
+                case 'success': notification.style.background = 'linear-gradient(45deg, #00c851, #00ff7f)'; break;
+                case 'error': notification.style.background = 'linear-gradient(45deg, #ff4444, #cc0000)'; break;
+                case 'info': notification.style.background = 'linear-gradient(45deg, #8b45ff, #ff6b6b)'; break;
+                default: notification.style.background = 'linear-gradient(45deg, #333, #666)';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in forwards';
+                setTimeout(() => { document.body.removeChild(notification); }, 300);
+            }, 3000);
+        }
+
+        streamTitleInput.addEventListener('input', function(e) {
+            const newTitle = e.target.value || 'Mi stream en vivo';
+            // Opcional: enviar el título a los espectadores a través de la conexión de datos
+            chatConnections.forEach(conn => {
+                if (conn.open) {
+                    conn.send(JSON.stringify({ type: 'streamTitle', title: newTitle }));
+                }
+            });
+        });
+    </script>
+</body>
+</html>
